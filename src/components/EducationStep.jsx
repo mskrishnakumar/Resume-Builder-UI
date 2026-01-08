@@ -1,17 +1,35 @@
+import { useEffect, useRef } from "react";
 import Question from "./Question";
 
 export default function EducationStep({ value, onChange, error }) {
-  const educations = value || [];
+  // Ensure educations is always an array (handle legacy object format from localStorage)
+  const educations = Array.isArray(value) ? value : [];
+  const hasInitialized = useRef(false);
+
+  // Auto-add first entry if empty (only once on mount)
+  useEffect(() => {
+    if (!hasInitialized.current && educations.length === 0) {
+      hasInitialized.current = true;
+      onChange([{
+        id: Date.now(),
+        qualification: "",
+        institution: "",
+        specialization: "",
+        year: ""
+      }]);
+    }
+  }, []);
+
+  const createNewEducation = () => ({
+    id: Date.now(),
+    qualification: "",
+    institution: "",
+    specialization: "",
+    year: ""
+  });
 
   const addEducation = () => {
-    const newEducation = {
-      id: Date.now(),
-      qualification: "",
-      institution: "",
-      specialization: "",
-      year: ""
-    };
-    onChange([...educations, newEducation]);
+    onChange([...educations, createNewEducation()]);
   };
 
   const updateEducation = (id, field, fieldValue) => {
@@ -26,16 +44,15 @@ export default function EducationStep({ value, onChange, error }) {
     onChange(updated);
   };
 
-  // Auto-add first entry if empty
+  // Show loading state while waiting for first entry to be added
   if (educations.length === 0) {
-    addEducation();
-    return null;
+    return <div className="text-gray-400 text-sm py-4">Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
       {educations.map((edu, index) => (
-        <div key={edu.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <div key={edu.id || index} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-gray-700">
               {index === 0 ? "Highest Qualification" : `Qualification ${index + 1}`}
