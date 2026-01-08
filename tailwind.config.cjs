@@ -5,7 +5,13 @@ module.exports = {
     "./src/**/*.{js,jsx}"
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Bricolage Grotesque', 'Outfit', 'sans-serif'],
+        resume: ['Merriweather', 'Georgia', 'serif'],
+      },
+    },
   },
   plugins: [],
 };
