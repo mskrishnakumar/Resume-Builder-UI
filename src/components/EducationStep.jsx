@@ -86,8 +86,8 @@ export default function EducationStep({ value, onChange, error }) {
                 value={edu.institution || ""}
                 onChange={(v) => updateEducation(edu.id, "institution", v)}
               />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">
                   Year (optional)
                 </label>
                 <input

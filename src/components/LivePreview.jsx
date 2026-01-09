@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { COLOR_SCHEMES } from "./ColorSchemeSelector";
 
 const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -7,14 +8,54 @@ const formatDate = (dateString) => {
     return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
+// Convert hex color to rgba with opacity (for PDF compatibility)
+const hexToRgba = (hex, opacity) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
 const LivePreview = forwardRef(function LivePreview({ data }, ref) {
     const educations = Array.isArray(data.education) ? data.education : [];
     const experiences = data.experience?.experiences || [];
 
+    // Get color scheme
+    const colorScheme = COLOR_SCHEMES.find(s => s.id === data.colorScheme) || COLOR_SCHEMES[0];
+    const primaryColor = colorScheme.primary;
+    const accentColor = colorScheme.accent;
+
+    // Pre-compute rgba colors for PDF compatibility
+    const accentBgLight = hexToRgba(accentColor, 0.1);
+    const accentBorderLight = hexToRgba(accentColor, 0.2);
+
+    // A4 aspect ratio: 210mm x 297mm = 1:1.414
     return (
-        <div ref={ref} className="bg-white shadow-2xl rounded-sm w-full min-h-[800px] p-8 md:p-12 border border-gray-200 sticky top-24 font-resume">
+        <div className="sticky top-24">
             {/* Header */}
-            <div className="border-b-2 border-gray-800 pb-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-500 mb-4 px-2">Live Preview <span className="text-sm font-normal">(A4)</span></h2>
+
+            {/* A4 Paper Container */}
+            <div
+                ref={ref}
+                className="bg-white font-resume mx-auto"
+                style={{
+                    width: "100%",
+                    maxWidth: "595px",
+                    aspectRatio: "210 / 297",
+                    padding: "40px 48px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    border: "1px solid #e5e7eb",
+                    WebkitFontSmoothing: "antialiased",
+                    MozOsxFontSmoothing: "grayscale",
+                    textRendering: "optimizeLegibility",
+                    overflow: "hidden"
+                }}
+            >
+            {/* Header */}
+            <div className="pb-6 mb-8" style={{ borderBottom: `2px solid ${primaryColor}` }}>
                 <div className="flex items-start gap-6">
                     {/* Photo */}
                     {data.photo ? (
@@ -22,17 +63,23 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
                             <img
                                 src={data.photo}
                                 alt="Profile"
-                                className="w-24 h-32 object-cover border-2 border-gray-300"
+                                className="w-24 h-32 object-cover"
+                                style={{ border: `2px solid ${accentColor}` }}
                             />
                         </div>
                     ) : null}
 
                     {/* Name and Contact */}
                     <div className={`flex-1 ${data.photo ? "text-left" : "text-center"}`}>
-                        <h1 className="text-4xl font-bold text-gray-900 tracking-wide uppercase mb-2">
+                        <h1
+                            className="text-4xl font-bold tracking-wide uppercase mb-2"
+                            style={{ color: primaryColor }}
+                        >
                             {data.name || "Your Name"}
                         </h1>
-                        <div className={`flex flex-wrap gap-4 text-sm text-gray-600 ${data.photo ? "justify-start" : "justify-center"}`}>
+                        <div className={`flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 ${data.photo ? "justify-start" : "justify-center"}`}>
+                            {data.email && <span>{data.email}</span>}
+                            {data.email && (data.phone || data.location) && <span>•</span>}
                             {data.phone && <span>{data.phone}</span>}
                             {data.phone && data.location && <span>•</span>}
                             {data.location && <span>{data.location}</span>}
@@ -51,7 +98,10 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
 
                 {/* Education */}
                 <div className="space-y-3">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-1">
+                    <h2
+                        className="text-sm font-bold uppercase tracking-widest pb-1"
+                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                    >
                         Education
                     </h2>
                     {educations.length > 0 ? (
@@ -88,13 +138,25 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
 
                 {/* Skills */}
                 <div className="space-y-3">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-1">
+                    <h2
+                        className="text-sm font-bold uppercase tracking-widest pb-1"
+                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                    >
                         Skills
                     </h2>
                     {data.skills && data.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 items-center">
                             {data.skills.map(skill => (
-                                <span key={skill} className="bg-gray-100 px-2 py-1 text-sm text-gray-700 rounded">
+                                <span
+                                    key={skill}
+                                    className="inline-flex items-center justify-center text-sm rounded"
+                                    style={{
+                                        backgroundColor: accentBgLight,
+                                        color: primaryColor,
+                                        padding: "4px 10px",
+                                        lineHeight: "1.4"
+                                    }}
+                                >
                                     {skill}
                                 </span>
                             ))}
@@ -106,7 +168,10 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
 
                 {/* Experience */}
                 <div className="space-y-3">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-1">
+                    <h2
+                        className="text-sm font-bold uppercase tracking-widest pb-1"
+                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                    >
                         Experience
                     </h2>
                     {data.experience?.hasExperience && experiences.length > 0 ? (
@@ -119,7 +184,7 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
                                                 {exp.role || "Job Title"}
                                             </h3>
                                             {exp.company && (
-                                                <p className="text-gray-600">
+                                                <p style={{ color: accentColor }}>
                                                     {exp.company}
                                                 </p>
                                             )}
@@ -144,6 +209,37 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
                         <p className="text-gray-400 text-sm italic">Fresh graduate / No prior experience</p>
                     )}
                 </div>
+
+                {/* Languages */}
+                <div className="space-y-3">
+                    <h2
+                        className="text-sm font-bold uppercase tracking-widest pb-1"
+                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                    >
+                        Languages Known
+                    </h2>
+                    {data.languages && data.languages.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {data.languages.map(language => (
+                                <span
+                                    key={language}
+                                    className="inline-flex items-center justify-center text-sm rounded"
+                                    style={{
+                                        backgroundColor: accentBgLight,
+                                        color: primaryColor,
+                                        padding: "4px 10px",
+                                        lineHeight: "1.4"
+                                    }}
+                                >
+                                    {language}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm italic">No languages selected yet...</p>
+                    )}
+                </div>
+            </div>
             </div>
         </div>
     );

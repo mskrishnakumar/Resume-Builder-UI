@@ -1,19 +1,34 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import Question from "../components/Question";
 import PhotoUpload from "../components/PhotoUpload";
 import SkillsSelector from "../components/SkillsSelector";
+import LanguagesSelector from "../components/LanguagesSelector";
+import ColorSchemeSelector from "../components/ColorSchemeSelector";
 import EducationStep from "../components/EducationStep";
 import ExperienceStep from "../components/ExperienceStep";
 import LivePreview from "../components/LivePreview";
 
 const STORAGE_KEY = "resume_builder_data";
 
+// Encouraging messages that rotate
+const ENCOURAGING_MESSAGES = [
+  "You're doing great! Every section you complete brings you closer to your dream job.",
+  "Keep going! A well-crafted resume opens doors to amazing opportunities.",
+  "Nice progress! Your future employer will be impressed.",
+  "Almost there! Your resume is shaping up beautifully.",
+  "Great work! Each detail you add tells your unique story.",
+  "You've got this! Your skills and experience deserve to shine.",
+];
+
 const SECTIONS = [
   { id: "personal", title: "Personal Details" },
   { id: "education", title: "Education" },
   { id: "skills", title: "Skills & Expertise" },
   { id: "experience", title: "Work Experience" },
+  { id: "languages", title: "Languages Known" },
+  { id: "customize", title: "Customize", optional: true },
 ];
 
 // Chevron Icon Component
@@ -41,22 +56,73 @@ const getInitialFormData = () => {
   }
   return {
     name: "",
+    email: "",
     phone: "",
     location: "",
     photo: null,
     education: [],
     skills: [],
+    languages: [],
     experience: { hasExperience: null, experiences: [] },
-    jobTarget: ""
+    jobTarget: "",
+    colorScheme: "classic"
   };
 };
+
+// Check if a section is complete
+const isSectionComplete = (sectionId, formData) => {
+  switch (sectionId) {
+    case "personal":
+      return formData.name?.trim()?.length > 0;
+    case "education":
+      const educations = formData.education || [];
+      return educations.length > 0 && educations[0]?.qualification?.trim()?.length > 0;
+    case "skills":
+      return formData.skills?.length > 0;
+    case "experience":
+      // Complete if they've made a choice (yes with entries OR no)
+      return formData.experience?.hasExperience === false ||
+        (formData.experience?.hasExperience === true && formData.experience?.experiences?.length > 0);
+    case "languages":
+      return formData.languages?.length > 0;
+    case "customize":
+      return formData.colorScheme && formData.colorScheme !== "classic";
+    default:
+      return false;
+  }
+};
+
+// Tick icon component
+const CheckIcon = () => (
+  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+  </svg>
+);
 
 export default function Builder() {
   const [activeSection, setActiveSection] = useState("personal");
   const [formData, setFormData] = useState(getInitialFormData);
   const [errors, setErrors] = useState({});
   const [isDownloading, setIsDownloading] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState(0);
+  const [showMessage, setShowMessage] = useState(true);
   const previewRef = useRef(null);
+
+  // Rotate encouraging messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowMessage(false);
+      setTimeout(() => {
+        setCurrentMessage((prev) => (prev + 1) % ENCOURAGING_MESSAGES.length);
+        setShowMessage(true);
+      }, 500);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Count completed sections
+  const completedSections = SECTIONS.filter(s => !s.optional && isSectionComplete(s.id, formData)).length;
+  const totalRequiredSections = SECTIONS.filter(s => !s.optional).length;
 
   // Save to localStorage whenever formData changes
   useEffect(() => {
@@ -111,8 +177,13 @@ export default function Builder() {
     const opt = {
       margin: 0.5,
       filename: `${formData.name || "resume"}_resume.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      image: { type: "png", quality: 1 },
+      html2canvas: {
+        scale: 3, // Higher scale for crisper text
+        useCORS: true,
+        logging: false,
+        letterRendering: true // Improves text rendering
+      },
       jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
     };
 
@@ -131,13 +202,16 @@ export default function Builder() {
       localStorage.removeItem(STORAGE_KEY);
       setFormData({
         name: "",
+        email: "",
         phone: "",
         location: "",
         photo: null,
         education: [],
         skills: [],
+        languages: [],
         experience: { hasExperience: null, experiences: [] },
-        jobTarget: ""
+        jobTarget: "",
+        colorScheme: "classic"
       });
       setErrors({});
     }
@@ -149,9 +223,21 @@ export default function Builder() {
       {/* Navbar */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold">R</div>
-            <span className="font-bold text-xl text-gray-800 tracking-tight">Resume<span className="text-blue-600">Coach</span></span>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm font-medium transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Home
+            </Link>
+            <div className="h-6 w-px bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold">R</div>
+              <span className="font-bold text-xl text-gray-800 tracking-tight">Resume<span className="text-blue-600">Coach</span></span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -181,13 +267,40 @@ export default function Builder() {
         </div>
       </header>
 
+      {/* Encouraging Message Banner */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div
+            className={`text-center text-sm text-blue-700 transition-opacity duration-500 ${showMessage ? "opacity-100" : "opacity-0"}`}
+          >
+            <span className="inline-flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              {ENCOURAGING_MESSAGES[currentMessage]}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
         {/* LEFT COLUMN - ACCORDION EDITOR */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-lg font-semibold text-gray-500">Builder</h2>
-            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Auto-saved</span>
+          {/* Builder Section Title */}
+          <div className="flex items-center justify-between mb-2 px-2">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-gray-700">Builder</h2>
+              <span className="text-xs text-gray-500">
+                {completedSections}/{totalRequiredSections} sections
+              </span>
+            </div>
+            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Auto-saved
+            </span>
           </div>
 
           {/* Personal Details */}
@@ -219,6 +332,11 @@ export default function Builder() {
                     <p className="text-red-500 text-sm mt-1">{errors.name}</p>
                   )}
                 </div>
+                <Question
+                  label="Email Address"
+                  value={formData.email}
+                  onChange={(v) => updateField("email", v)}
+                />
                 <Question
                   label="Phone Number"
                   value={formData.phone}
@@ -307,11 +425,61 @@ export default function Builder() {
             )}
           </div>
 
+          {/* Languages */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => toggleSection("languages")}
+              className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            >
+              <span>Languages Known</span>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${activeSection === "languages" ? "rotate-180" : ""}`} />
+            </button>
+            {activeSection === "languages" && (
+              <div className="p-5 pt-0 animate-in fade-in slide-in-from-top-1">
+                <LanguagesSelector
+                  value={formData.languages || []}
+                  onChange={(v) => updateField("languages", v)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Optional Enhancements Section */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3 px-2">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Optional Enhancements</h2>
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Optional</span>
+            </div>
+
+            {/* Customize / Color Scheme */}
+            <div className="bg-white rounded-xl shadow-sm border border-dashed border-gray-300 overflow-hidden">
+              <button
+                onClick={() => toggleSection("customize")}
+                className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  Color Scheme
+                </span>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${activeSection === "customize" ? "rotate-180" : ""}`} />
+              </button>
+              {activeSection === "customize" && (
+                <div className="p-5 pt-0 animate-in fade-in slide-in-from-top-1">
+                  <ColorSchemeSelector
+                    value={formData.colorScheme || "classic"}
+                    onChange={(v) => updateField("colorScheme", v)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
 
         {/* RIGHT COLUMN - PREVIEW */}
         <div className="hidden lg:block lg:col-span-7">
-          <h2 className="text-lg font-semibold text-gray-500 mb-4 px-2">Live Preview</h2>
           <LivePreview ref={previewRef} data={formData} />
         </div>
 

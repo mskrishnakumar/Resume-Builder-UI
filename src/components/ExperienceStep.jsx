@@ -94,8 +94,8 @@ export default function ExperienceStep({ value, onChange }) {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">Company Name</label>
                     <input
                       className="w-full border-2 border-gray-200 rounded-xl p-3 text-base focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none bg-white"
                       placeholder="e.g. ABC Corp"
@@ -103,8 +103,8 @@ export default function ExperienceStep({ value, onChange }) {
                       onChange={(e) => updateExperience(exp.id, "company", e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">Job Title</label>
                     <input
                       className="w-full border-2 border-gray-200 rounded-xl p-3 text-base focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none bg-white"
                       placeholder="e.g. Sales Assistant"
@@ -115,8 +115,8 @@ export default function ExperienceStep({ value, onChange }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">Start Date</label>
                     <input
                       type="month"
                       className="w-full border-2 border-gray-200 rounded-xl p-3 text-base focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none bg-white"
@@ -124,8 +124,8 @@ export default function ExperienceStep({ value, onChange }) {
                       onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">End Date</label>
                     <input
                       type="month"
                       className="w-full border-2 border-gray-200 rounded-xl p-3 text-base focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none bg-white"
@@ -136,8 +136,8 @@ export default function ExperienceStep({ value, onChange }) {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">What did you do?</label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-gray-700">What did you do?</label>
                   <textarea
                     className="w-full border-2 border-gray-200 rounded-xl p-3 text-base focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none bg-white"
                     placeholder="Describe your main tasks and achievements..."
