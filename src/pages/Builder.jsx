@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
+import { useAuth } from "../context/AuthContext";
+import { auth } from "../firebase";
 import Question from "../components/Question";
 import PhotoUpload from "../components/PhotoUpload";
 import SkillsSelector from "../components/SkillsSelector";
@@ -100,8 +102,12 @@ const CheckIcon = () => (
 );
 
 export default function Builder() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("personal");
   const [formData, setFormData] = useState(getInitialFormData);
+  const [isCloudSaving, setIsCloudSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentMessage, setCurrentMessage] = useState(0);
@@ -124,10 +130,72 @@ export default function Builder() {
   const completedSections = SECTIONS.filter(s => !s.optional && isSectionComplete(s.id, formData)).length;
   const totalRequiredSections = SECTIONS.filter(s => !s.optional).length;
 
-  // Save to localStorage whenever formData changes
+  // Fetch data from Cloud on mount
+  useEffect(() => {
+    const loadFromCloud = async () => {
+      if (!user) return;
+
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/GetResume', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const cloudData = await response.json();
+          if (cloudData) {
+            setFormData(prev => ({ ...prev, ...cloudData }));
+            setLastSaved(new Date());
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load resume:", error);
+      }
+    };
+
+    if (!authLoading && user) {
+      loadFromCloud();
+    }
+  }, [user, authLoading]);
+
+  // Save to Cloud & LocalStorage
+  // Debounced save for cloud, immediate for local
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+
+    const saveToCloud = async () => {
+      if (!user) return;
+
+      setIsCloudSaving(true);
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/SaveResume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          setLastSaved(new Date());
+        }
+      } catch (error) {
+        console.error("Failed to auto-save:", error);
+      } finally {
+        setIsCloudSaving(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      if (user) saveToCloud();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(debounceTimer);
+  }, [formData, user]);
 
   const toggleSection = (id) => {
     setActiveSection(activeSection === id ? null : id);
@@ -175,16 +243,16 @@ export default function Builder() {
     setIsDownloading(true);
 
     const opt = {
-      margin: 0.5,
+      margin: 0,
       filename: `${formData.name || "resume"}_resume.pdf`,
-      image: { type: "png", quality: 1 },
+      image: { type: "jpeg", quality: 0.98 }, // JPEG reduces file size significantly compared to PNG
       html2canvas: {
-        scale: 3, // Higher scale for crisper text
+        scale: 2, // Scale 2 is sufficient for crisp print (approx 192dpi) and keeps size down
         useCORS: true,
         logging: false,
-        letterRendering: true // Improves text rendering
+        letterRendering: true
       },
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
     };
 
     try {
@@ -217,6 +285,31 @@ export default function Builder() {
     }
   };
 
+  const loadDemoData = () => {
+    if (formData.name && !confirm("This will overwrite your current data. Continue?")) return;
+
+    setFormData({
+      name: "Alex Morgan",
+      email: "alex.morgan@example.com",
+      phone: "+91 98765 43210",
+      location: "Bangalore, India",
+      photo: null,
+      education: [
+        { id: 1, qualification: "Bachelor of Technology", specialization: "Computer Science", institution: "Indian Institute of Technology, Madras", year: "2023" }
+      ],
+      skills: ["React", "Node.js", "JavaScript", "Python", "AWS", "UI/UX Design"],
+      languages: ["English", "Hindi", "Kannada"],
+      experience: {
+        hasExperience: true,
+        experiences: [
+          { id: 1, role: "Frontend Developer", company: "TechCorp India", startDate: "2023-06", endDate: "", details: "Built responsive web applications using React and TailwindCSS. Improved site performance by 40%." }
+        ]
+      },
+      jobTarget: "Senior Frontend Engineer",
+      colorScheme: "modern"
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 font-sans">
 
@@ -236,32 +329,30 @@ export default function Builder() {
             <div className="h-6 w-px bg-gray-200" />
             <div className="flex items-center gap-2">
               <div className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold">R</div>
-              <span className="font-bold text-xl text-gray-800 tracking-tight">Resume<span className="text-blue-600">Coach</span></span>
+              <span className="font-bold text-xl text-gray-800 tracking-tight">Resume<span className="text-blue-600">Builder</span></span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {user && (
+              <>
+                <div className="hidden md:flex flex-col items-end">
+                  <span className="text-sm font-bold text-gray-700 leading-none">
+                    {user.displayName || "User"}
+                  </span>
+                  <span className="text-xs text-gray-500 leading-none mt-1">
+                    {user.email}
+                  </span>
+                </div>
+                <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
+                  {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+                </div>
+              </>
+            )}
             <button
-              className="text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-medium transition-colors"
-              onClick={clearData}
+              onClick={() => auth.signOut()}
+              className="text-sm text-gray-500 hover:text-gray-900 font-medium"
             >
-              Clear All
-            </button>
-            <button
-              className="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-gray-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-              onClick={handleDownload}
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating...
-                </>
-              ) : (
-                "Download PDF"
-              )}
+              Sign Out
             </button>
           </div>
         </div>
@@ -283,25 +374,103 @@ export default function Builder() {
         </div>
       </div>
 
+      {/* Unified Sticky Toolbar */}
+      <div className="sticky top-16 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+
+          {/* Left: Status & Progress */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <svg className="w-10 h-10 text-gray-100" viewBox="0 0 36 36">
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="blue" strokeWidth="4" strokeDasharray={`${(completedSections / totalRequiredSections) * 100}, 100`} className="text-blue-600 transition-all duration-1000 ease-out" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                  {Math.round((completedSections / totalRequiredSections) * 100)}%
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Progress</span>
+                <span className="text-xs text-gray-500">{completedSections}/{totalRequiredSections} Steps</span>
+              </div>
+            </div>
+
+            <div className="h-8 w-px bg-gray-200" />
+
+            <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-colors ${isCloudSaving ? "text-blue-600 bg-blue-50" : "text-green-600 bg-green-50"}`}>
+              {isCloudSaving ? (
+                <>
+                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  {lastSaved ? "Saved" : "Auto-saved"}
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={loadDemoData}
+              className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Load Demo
+            </button>
+
+            <button
+              onClick={clearData}
+              className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-all"
+            >
+              Clear
+            </button>
+
+            <div className="h-6 w-px bg-gray-200" />
+
+            <button
+              disabled
+              className="text-gray-400 cursor-not-allowed px-2 flex items-center gap-1 text-sm font-medium"
+              title="Coming Soon"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="hidden lg:inline">Email Me</span>
+            </button>
+
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-lg shadow-slate-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isDownloading ? (
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              )}
+              Download PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
         {/* LEFT COLUMN - ACCORDION EDITOR */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Builder Section Title */}
-          <div className="flex items-center justify-between mb-2 px-2">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-gray-700">Builder</h2>
-              <span className="text-xs text-gray-500">
-                {completedSections}/{totalRequiredSections} sections
-              </span>
-            </div>
-            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Auto-saved
-            </span>
-          </div>
+        <div className="lg:col-span-12 xl:col-span-5 space-y-4">
+          {/* Section Headers Removed - Using Unified Bar */}
 
           {/* Personal Details */}
           <div className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${errors.name ? "border-red-300" : "border-gray-200"}`}>
@@ -310,6 +479,7 @@ export default function Builder() {
               className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
               <span className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
                 Personal Details
                 {errors.name && <span className="text-red-500 text-xs font-normal">({errors.name})</span>}
               </span>
@@ -358,6 +528,7 @@ export default function Builder() {
               className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
               <span className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
                 Education
                 {errors.education && <span className="text-red-500 text-xs font-normal">({errors.education})</span>}
               </span>
@@ -381,6 +552,7 @@ export default function Builder() {
               className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
               <span className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">3</span>
                 Skills
                 {errors.skills && <span className="text-red-500 text-xs font-normal">({errors.skills})</span>}
               </span>
@@ -405,7 +577,10 @@ export default function Builder() {
               onClick={() => toggleSection("experience")}
               className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
-              <span>Experience</span>
+              <span className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                Experience
+              </span>
               <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${activeSection === "experience" ? "rotate-180" : ""}`} />
             </button>
             {activeSection === "experience" && (
@@ -431,7 +606,10 @@ export default function Builder() {
               onClick={() => toggleSection("languages")}
               className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             >
-              <span>Languages Known</span>
+              <span className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                Languages Known
+              </span>
               <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${activeSection === "languages" ? "rotate-180" : ""}`} />
             </button>
             {activeSection === "languages" && (
@@ -479,7 +657,7 @@ export default function Builder() {
         </div>
 
         {/* RIGHT COLUMN - PREVIEW */}
-        <div className="hidden lg:block lg:col-span-7">
+        <div className="hidden lg:block lg:col-span-12 xl:col-span-7">
           <LivePreview ref={previewRef} data={formData} />
         </div>
 

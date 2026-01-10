@@ -34,212 +34,193 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
     // A4 aspect ratio: 210mm x 297mm = 1:1.414
     return (
         <div className="sticky top-24">
-            {/* Header */}
-            <h2 className="text-lg font-semibold text-gray-500 mb-4 px-2">Live Preview <span className="text-sm font-normal">(A4)</span></h2>
+            {/* Header Removed as per user request */}
 
-            {/* A4 Paper Container */}
+            {/* A4 Paper Container Wrapper (UI Styling) */}
             <div
-                ref={ref}
-                className="bg-white font-resume mx-auto"
+                className="mx-auto"
                 style={{
-                    width: "100%",
                     maxWidth: "595px",
-                    aspectRatio: "210 / 297",
-                    padding: "40px 48px",
                     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                    border: "1px solid #e5e7eb",
-                    WebkitFontSmoothing: "antialiased",
-                    MozOsxFontSmoothing: "grayscale",
-                    textRendering: "optimizeLegibility",
-                    overflow: "hidden"
+                    border: "1px solid #e5e7eb"
                 }}
             >
-            {/* Header */}
-            <div className="pb-6 mb-8" style={{ borderBottom: `2px solid ${primaryColor}` }}>
-                <div className="flex items-start gap-6">
-                    {/* Photo */}
-                    {data.photo ? (
-                        <div className="flex-shrink-0">
-                            <img
-                                src={data.photo}
-                                alt="Profile"
-                                className="w-24 h-32 object-cover"
-                                style={{ border: `2px solid ${accentColor}` }}
-                            />
-                        </div>
-                    ) : null}
+                {/* Printable Content (Clean) */}
+                <div
+                    ref={ref}
+                    className="bg-white font-resume"
+                    style={{
+                        width: "100%",
+                        minHeight: "296mm", // Slightly less than 297mm to prevent overflow
+                        padding: "40px 48px",
+                        boxSizing: "border-box", // Ensure padding is included in height
+                        WebkitFontSmoothing: "antialiased",
+                        MozOsxFontSmoothing: "grayscale",
+                        textRendering: "optimizeLegibility",
+                        overflow: "hidden"
+                    }}
+                >
+                    {/* Header */}
+                    <div className="pb-6 mb-8" style={{ borderBottom: `2px solid ${primaryColor}` }}>
+                        <div className="flex items-start gap-6">
+                            {/* Photo */}
+                            {data.photo ? (
+                                <div className="flex-shrink-0">
+                                    <img
+                                        src={data.photo}
+                                        alt="Profile"
+                                        className="w-24 h-32 object-cover"
+                                        style={{ border: `2px solid ${accentColor}` }}
+                                    />
+                                </div>
+                            ) : null}
 
-                    {/* Name and Contact */}
-                    <div className={`flex-1 ${data.photo ? "text-left" : "text-center"}`}>
-                        <h1
-                            className="text-4xl font-bold tracking-wide uppercase mb-2"
-                            style={{ color: primaryColor }}
-                        >
-                            {data.name || "Your Name"}
-                        </h1>
-                        <div className={`flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 ${data.photo ? "justify-start" : "justify-center"}`}>
-                            {data.email && <span>{data.email}</span>}
-                            {data.email && (data.phone || data.location) && <span>•</span>}
-                            {data.phone && <span>{data.phone}</span>}
-                            {data.phone && data.location && <span>•</span>}
-                            {data.location && <span>{data.location}</span>}
-                        </div>
-                        {data.jobTarget && (
-                            <div className="mt-4 text-gray-500 italic">
-                                Targeting: {data.jobTarget}
+                            {/* Name and Contact */}
+                            <div className={`flex-1 ${data.photo ? "text-left" : "text-center"}`}>
+                                <h1
+                                    className="text-4xl font-bold tracking-wide uppercase mb-2"
+                                    style={{ color: primaryColor }}
+                                >
+                                    {data.name || "Your Name"}
+                                </h1>
+                                <div className={`flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 ${data.photo ? "justify-start" : "justify-center"}`}>
+                                    {data.email && <span>{data.email}</span>}
+                                    {data.email && (data.phone || data.location) && <span>•</span>}
+                                    {data.phone && <span>{data.phone}</span>}
+                                    {data.phone && data.location && <span>•</span>}
+                                    {data.location && <span>{data.location}</span>}
+                                </div>
+                                {data.jobTarget && (
+                                    <div className="mt-4 text-gray-500 italic">
+                                        Targeting: {data.jobTarget}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Sections */}
-            <div className="space-y-8">
+                    {/* Sections */}
+                    <div className="space-y-8">
 
-                {/* Education */}
-                <div className="space-y-3">
-                    <h2
-                        className="text-sm font-bold uppercase tracking-widest pb-1"
-                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
-                    >
-                        Education
-                    </h2>
-                    {educations.length > 0 ? (
-                        <div className="space-y-4">
-                            {educations.map((edu, index) => (
-                                <div key={edu.id || index}>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <div className="text-lg font-bold text-gray-900">
-                                                {edu.qualification || "Your Qualification"}
-                                                {edu.specialization && (
-                                                    <span className="font-normal text-gray-600"> in {edu.specialization}</span>
+                        {/* Education */}
+                        <div className="space-y-3">
+                            <h2
+                                className="text-sm font-bold uppercase tracking-widest pb-1"
+                                style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                            >
+                                Education
+                            </h2>
+                            {educations.length > 0 ? (
+                                <div className="space-y-4">
+                                    {educations.map((edu, index) => (
+                                        <div key={edu.id || index}>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="text-lg font-bold text-gray-900">
+                                                        {edu.qualification || "Your Qualification"}
+                                                        {edu.specialization && (
+                                                            <span className="font-normal text-gray-600"> in {edu.specialization}</span>
+                                                        )}
+                                                    </div>
+                                                    {edu.institution && (
+                                                        <p className="text-gray-600">
+                                                            {edu.institution}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                {edu.year && (
+                                                    <span className="text-sm text-gray-500">
+                                                        {edu.year}
+                                                    </span>
                                                 )}
                                             </div>
-                                            {edu.institution && (
-                                                <p className="text-gray-600">
-                                                    {edu.institution}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-400 text-sm italic">No education added yet...</p>
+                            )}
+                        </div>
+
+                        {/* Skills */}
+                        <div className="space-y-3">
+                            <h2
+                                className="text-sm font-bold uppercase tracking-widest pb-1"
+                                style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                            >
+                                Skills
+                            </h2>
+                            {data.skills && data.skills.length > 0 ? (
+                                <div className="text-gray-700 leading-relaxed font-medium">
+                                    {data.skills.join(" • ")}
+                                </div>
+                            ) : (
+                                <p className="text-gray-400 text-sm italic">No skills selected yet...</p>
+                            )}
+                        </div>
+
+                        {/* Experience */}
+                        <div className="space-y-3">
+                            <h2
+                                className="text-sm font-bold uppercase tracking-widest pb-1"
+                                style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                            >
+                                Experience
+                            </h2>
+                            {data.experience?.hasExperience && experiences.length > 0 ? (
+                                <div className="space-y-6">
+                                    {experiences.map((exp, index) => (
+                                        <div key={exp.id || index}>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-900">
+                                                        {exp.role || "Job Title"}
+                                                    </h3>
+                                                    {exp.company && (
+                                                        <p style={{ color: accentColor }}>
+                                                            {exp.company}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                {(exp.startDate || exp.endDate) && (
+                                                    <span className="text-sm text-gray-500">
+                                                        {formatDate(exp.startDate)}
+                                                        {exp.startDate && " - "}
+                                                        {exp.endDate ? formatDate(exp.endDate) : "Present"}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {exp.details && (
+                                                <p className="text-gray-700 mt-2 leading-relaxed">
+                                                    {exp.details}
                                                 </p>
                                             )}
                                         </div>
-                                        {edu.year && (
-                                            <span className="text-sm text-gray-500">
-                                                {edu.year}
-                                            </span>
-                                        )}
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : (
+                                <p className="text-gray-400 text-sm italic">Fresh graduate / No prior experience</p>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-gray-400 text-sm italic">No education added yet...</p>
-                    )}
-                </div>
 
-                {/* Skills */}
-                <div className="space-y-3">
-                    <h2
-                        className="text-sm font-bold uppercase tracking-widest pb-1"
-                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
-                    >
-                        Skills
-                    </h2>
-                    {data.skills && data.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 items-center">
-                            {data.skills.map(skill => (
-                                <span
-                                    key={skill}
-                                    className="inline-flex items-center justify-center text-sm rounded"
-                                    style={{
-                                        backgroundColor: accentBgLight,
-                                        color: primaryColor,
-                                        padding: "4px 10px",
-                                        lineHeight: "1.4"
-                                    }}
-                                >
-                                    {skill}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-gray-400 text-sm italic">No skills selected yet...</p>
-                    )}
-                </div>
-
-                {/* Experience */}
-                <div className="space-y-3">
-                    <h2
-                        className="text-sm font-bold uppercase tracking-widest pb-1"
-                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
-                    >
-                        Experience
-                    </h2>
-                    {data.experience?.hasExperience && experiences.length > 0 ? (
-                        <div className="space-y-6">
-                            {experiences.map((exp, index) => (
-                                <div key={exp.id || index}>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">
-                                                {exp.role || "Job Title"}
-                                            </h3>
-                                            {exp.company && (
-                                                <p style={{ color: accentColor }}>
-                                                    {exp.company}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {(exp.startDate || exp.endDate) && (
-                                            <span className="text-sm text-gray-500">
-                                                {formatDate(exp.startDate)}
-                                                {exp.startDate && " - "}
-                                                {exp.endDate ? formatDate(exp.endDate) : "Present"}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {exp.details && (
-                                        <p className="text-gray-700 mt-2 leading-relaxed">
-                                            {exp.details}
-                                        </p>
-                                    )}
+                        {/* Languages */}
+                        <div className="space-y-3">
+                            <h2
+                                className="text-sm font-bold uppercase tracking-widest pb-1"
+                                style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
+                            >
+                                Languages Known
+                            </h2>
+                            {data.languages && data.languages.length > 0 ? (
+                                <div className="text-gray-700 leading-relaxed font-medium">
+                                    {data.languages.join(" • ")}
                                 </div>
-                            ))}
+                            ) : (
+                                <p className="text-gray-400 text-sm italic">No languages selected yet...</p>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-gray-400 text-sm italic">Fresh graduate / No prior experience</p>
-                    )}
+                    </div>
                 </div>
-
-                {/* Languages */}
-                <div className="space-y-3">
-                    <h2
-                        className="text-sm font-bold uppercase tracking-widest pb-1"
-                        style={{ color: primaryColor, borderBottom: `1px solid ${accentBorderLight}` }}
-                    >
-                        Languages Known
-                    </h2>
-                    {data.languages && data.languages.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 items-center">
-                            {data.languages.map(language => (
-                                <span
-                                    key={language}
-                                    className="inline-flex items-center justify-center text-sm rounded"
-                                    style={{
-                                        backgroundColor: accentBgLight,
-                                        color: primaryColor,
-                                        padding: "4px 10px",
-                                        lineHeight: "1.4"
-                                    }}
-                                >
-                                    {language}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-gray-400 text-sm italic">No languages selected yet...</p>
-                    )}
-                </div>
-            </div>
             </div>
         </div>
     );

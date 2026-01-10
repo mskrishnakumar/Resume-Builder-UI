@@ -51,9 +51,3 @@ Builder.jsx uses local `useState` for form data. No global state library. Form c
 100% Tailwind utility classes. Custom fonts (Bricolage Grotesque, Inter, Outfit) loaded via HTML. Responsive grid layout (mobile-first).
 
 
-### Bug pending fix
-
-Read c:\Users\mskri\guided-resume-ui\src\components\EducationStep.jsx
-I see the issue now. The problem is that createNewEducation is defined inside the component and is being called inside useEffect. This creates a closure issue. Also, the empty dependency array [] means the effect only runs once on mount, but if value is already loaded from localStorage with data, it might cause issues.
-
-Wait - I think the issue might be that onChange is not stable (it's created fresh on each render in the parent). This causes an infinite loop in useEffect. Let me fix this by using a ref to track if we've already initialized:
