@@ -1,3 +1,4 @@
+require("../shared/polyfill");
 const { TableClient } = require("@azure/data-tables");
 const { validateUser } = require("../shared/auth");
 
