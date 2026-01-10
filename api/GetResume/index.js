@@ -25,12 +25,18 @@ module.exports = async function (context, req) {
 
         // Use try-catch for getEntity in case it doesn't exist (404)
         try {
-            const result = await client.getEntity(user.uid, "current");
+            const mainResult = await client.getEntity(user.uid, "current");
+            const resumeData = JSON.parse(mainResult.data);
 
-            // Allow frontend to handle parsing, or parse here. 
-            // Since we stored stringified JSON, we can return it.
-            // But usually APIs return JSON objects.
-            const resumeData = JSON.parse(result.data);
+            // Fetch photo if it exists
+            if (mainResult.hasPhoto) {
+                try {
+                    const photoResult = await client.getEntity(user.uid, "photo");
+                    resumeData.photo = photoResult.photoData;
+                } catch (photoErr) {
+                    context.log.warn("Photo indicated but not found:", photoErr.message);
+                }
+            }
 
             context.res = {
                 status: 200,

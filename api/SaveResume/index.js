@@ -42,18 +42,34 @@ module.exports = async function (context, req) {
             }
         }
 
-        const entity = {
+        // 3. Handle Photo Separately (to bypass 64KB property limit)
+        const photo = resumeData.photo;
+        const cleanResumeData = { ...resumeData };
+        delete cleanResumeData.photo; // Remove photo from main JSON
+
+        const mainEntity = {
             partitionKey: user.uid,
             rowKey: "current",
-            data: JSON.stringify(resumeData),
+            data: JSON.stringify(cleanResumeData),
             updatedAt: new Date().toISOString(),
             userEmail: user.email,
-            userName: user.name || user.email // Fallback to email if name empty
+            userName: user.name || user.email,
+            hasPhoto: !!photo
         };
 
-        context.log(`Attempting to save entity for ${user.email} (UID: ${user.uid})...`);
-        await client.upsertEntity(entity, "Replace");
-        context.log(`SUCCESS: Resume saved for ${user.email} at ${entity.updatedAt}`);
+        context.log(`Saving main resume for ${user.email}...`);
+        await client.upsertEntity(mainEntity, "Replace");
+
+        if (photo) {
+            context.log(`Saving separate photo entity for ${user.email}...`);
+            const photoEntity = {
+                partitionKey: user.uid,
+                rowKey: "photo",
+                photoData: photo,
+                updatedAt: new Date().toISOString()
+            };
+            await client.upsertEntity(photoEntity, "Replace");
+        }
 
         context.res = {
             status: 200,
