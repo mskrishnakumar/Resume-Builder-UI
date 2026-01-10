@@ -107,6 +107,7 @@ export default function Builder() {
   const [activeSection, setActiveSection] = useState("personal");
   const [formData, setFormData] = useState(getInitialFormData);
   const [isCloudSaving, setIsCloudSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
   const [isDownloading, setIsDownloading] = useState(false);
@@ -114,16 +115,10 @@ export default function Builder() {
   const [showMessage, setShowMessage] = useState(true);
   const previewRef = useRef(null);
 
-  // Rotate encouraging messages
+  // Select one random message on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setShowMessage(false);
-      setTimeout(() => {
-        setCurrentMessage((prev) => (prev + 1) % ENCOURAGING_MESSAGES.length);
-        setShowMessage(true);
-      }, 500);
-    }, 6000);
-    return () => clearInterval(interval);
+    const randomIndex = Math.floor(Math.random() * ENCOURAGING_MESSAGES.length);
+    setCurrentMessage(randomIndex);
   }, []);
 
   // Count completed sections
@@ -169,6 +164,7 @@ export default function Builder() {
       if (!user) return;
 
       setIsCloudSaving(true);
+      setSaveError(null);
       try {
         const token = await user.getIdToken();
         const response = await fetch('/api/SaveResume', {
@@ -182,9 +178,21 @@ export default function Builder() {
 
         if (response.ok) {
           setLastSaved(new Date());
+          setSaveError(null);
+        } else {
+          try {
+            const errorData = await response.json();
+            console.error(`Cloud save failed (${response.status}):`, errorData);
+            setSaveError(errorData.message || `Error ${response.status}`);
+          } catch (e) {
+            const errorText = await response.text();
+            console.error(`Cloud save failed (${response.status}):`, errorText);
+            setSaveError(`Cloud Save Failed (${response.status})`);
+          }
         }
       } catch (error) {
         console.error("Failed to auto-save:", error);
+        setSaveError("Connection Error");
       } finally {
         setIsCloudSaving(false);
       }
@@ -376,92 +384,108 @@ export default function Builder() {
 
       {/* Unified Sticky Toolbar */}
       <div className="sticky top-16 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
-          {/* Left: Status & Progress */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <svg className="w-10 h-10 text-gray-100" viewBox="0 0 36 36">
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="blue" strokeWidth="4" strokeDasharray={`${(completedSections / totalRequiredSections) * 100}, 100`} className="text-blue-600 transition-all duration-1000 ease-out" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                  {Math.round((completedSections / totalRequiredSections) * 100)}%
+          {/* Left: Status & Progress (Matches Left Column) */}
+          <div className="lg:col-span-12 xl:col-span-5 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <svg className="w-10 h-10 text-gray-100" viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="blue" strokeWidth="4" strokeDasharray={`${(completedSections / totalRequiredSections) * 100}, 100`} className="text-blue-600 transition-all duration-1000 ease-out" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                    {Math.round((completedSections / totalRequiredSections) * 100)}%
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Progress</span>
+                  <span className="text-xs text-gray-500">{completedSections}/{totalRequiredSections} Steps</span>
                 </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Progress</span>
-                <span className="text-xs text-gray-500">{completedSections}/{totalRequiredSections} Steps</span>
-              </div>
+
+              <div className="h-8 w-px bg-gray-200" />
+
+              <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-colors ${isCloudSaving ? "text-blue-600 bg-blue-50" :
+                saveError ? "text-red-600 bg-red-50 font-bold" :
+                  lastSaved ? "text-green-600 bg-green-50" :
+                    "text-gray-500 bg-gray-100"
+                }`}>
+                {isCloudSaving ? (
+                  <>
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving to Cloud...
+                  </>
+                ) : saveError ? (
+                  <>
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    {saveError}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    {lastSaved ? "Sync Active" : "Local Save Only"}
+                  </>
+                )}
+              </span>
             </div>
-
-            <div className="h-8 w-px bg-gray-200" />
-
-            <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-colors ${isCloudSaving ? "text-blue-600 bg-blue-50" : "text-green-600 bg-green-50"}`}>
-              {isCloudSaving ? (
-                <>
-                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  {lastSaved ? "Saved" : "Auto-saved"}
-                </>
-              )}
-            </span>
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadDemoData}
-              className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Load Demo
-            </button>
+          {/* Right: Actions (Matches Right Column Layout) */}
+          <div className="hidden lg:flex lg:col-span-12 xl:col-span-7 justify-center relative">
+            {/* Inner container matches the Live Preview's width (max-w-[595px]) so buttons align perfectly */}
+            <div className="w-full max-w-[595px] flex items-center justify-end gap-3">
+              <button
+                onClick={loadDemoData}
+                className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Load Demo
+              </button>
 
-            <button
-              onClick={clearData}
-              className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-all"
-            >
-              Clear
-            </button>
+              <button
+                onClick={clearData}
+                className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-all"
+              >
+                Clear
+              </button>
 
-            <div className="h-6 w-px bg-gray-200" />
+              <div className="h-6 w-px bg-gray-200" />
 
-            <button
-              disabled
-              className="text-gray-400 cursor-not-allowed px-2 flex items-center gap-1 text-sm font-medium"
-              title="Coming Soon"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="hidden lg:inline">Email Me</span>
-            </button>
+              <button
+                disabled
+                className="text-gray-400 cursor-not-allowed px-2 flex items-center gap-1 text-sm font-medium"
+                title="Coming Soon"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span className="hidden lg:inline">Email Me</span>
+              </button>
 
-            <button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-lg shadow-slate-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isDownloading ? (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              )}
-              Download PDF
-            </button>
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-lg shadow-slate-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isDownloading ? (
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                )}
+                Download PDF
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -658,7 +682,9 @@ export default function Builder() {
 
         {/* RIGHT COLUMN - PREVIEW */}
         <div className="hidden lg:block lg:col-span-12 xl:col-span-7">
-          <LivePreview ref={previewRef} data={formData} />
+          <div className="sticky top-24">
+            <LivePreview ref={previewRef} data={formData} />
+          </div>
         </div>
 
       </main>

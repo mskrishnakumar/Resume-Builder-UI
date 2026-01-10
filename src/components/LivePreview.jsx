@@ -51,9 +51,9 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
                     className="bg-white font-resume"
                     style={{
                         width: "100%",
-                        minHeight: "296mm", // Slightly less than 297mm to prevent overflow
+                        aspectRatio: "210 / 297", // Revert to ratio for consistent UI shape
                         padding: "40px 48px",
-                        boxSizing: "border-box", // Ensure padding is included in height
+                        boxSizing: "border-box",
                         WebkitFontSmoothing: "antialiased",
                         MozOsxFontSmoothing: "grayscale",
                         textRendering: "optimizeLegibility",

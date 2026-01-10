@@ -32,7 +32,15 @@ module.exports = async function (context, req) {
         }
 
         const client = TableClient.fromConnectionString(connectionString, "Resumes");
-        await client.createTable();
+
+        // Gracefully handle table creation
+        try {
+            await client.createTable();
+        } catch (err) {
+            if (err.statusCode !== 409) {
+                context.log.error("Failed to create/check table:", err);
+            }
+        }
 
         const entity = {
             partitionKey: user.uid,
@@ -43,7 +51,9 @@ module.exports = async function (context, req) {
             userName: user.name || user.email // Fallback to email if name empty
         };
 
+        context.log(`Attempting to save entity for ${user.email} (UID: ${user.uid})...`);
         await client.upsertEntity(entity, "Replace");
+        context.log(`SUCCESS: Resume saved for ${user.email} at ${entity.updatedAt}`);
 
         context.res = {
             status: 200,
@@ -53,7 +63,11 @@ module.exports = async function (context, req) {
         context.log.error("Error saving resume:", error);
         context.res = {
             status: 500,
-            body: "Internal Server Error"
+            body: {
+                error: "Internal Server Error",
+                message: error.message,
+                hint: !process.env.RESUME_STORAGE_CONNECTION_STRING ? "Missing RESUME_STORAGE_CONNECTION_STRING" : "Check Azure Table Storage permissions"
+            }
         };
     }
 };
