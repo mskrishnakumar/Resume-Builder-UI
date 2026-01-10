@@ -3,13 +3,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDpYEPgAK8QbWymWU1ubqonEFrADzn5cJQ",
-    authDomain: "resume-coach-auth.firebaseapp.com",
-    projectId: "resume-coach-auth",
-    storageBucket: "resume-coach-auth.firebasestorage.app",
-    messagingSenderId: "918448249340",
-    appId: "1:918448249340:web:51ce61a4e9f83c9bc17a79",
-    measurementId: "G-G5LS5CY23H"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

@@ -50,14 +50,15 @@ const LivePreview = forwardRef(function LivePreview({ data }, ref) {
                     ref={ref}
                     className="bg-white font-resume"
                     style={{
-                        width: "100%",
-                        aspectRatio: "210 / 297", // Revert to ratio for consistent UI shape
+                        width: "210mm",
+                        height: "296mm", // Strictly slightly less than A4 height (297mm) to avoid spillage
                         padding: "40px 48px",
                         boxSizing: "border-box",
                         WebkitFontSmoothing: "antialiased",
                         MozOsxFontSmoothing: "grayscale",
                         textRendering: "optimizeLegibility",
-                        overflow: "hidden"
+                        overflow: "hidden",
+                        backgroundColor: "white"
                     }}
                 >
                     {/* Header */}
