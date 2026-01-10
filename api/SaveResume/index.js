@@ -1,9 +1,22 @@
-require("../shared/polyfill");
+// CRITICAL: Crypto Polyfill for Azure Functions (to fix @azure/data-tables failure)
+const nodeCrypto = require('crypto');
+if (typeof globalThis.crypto === 'undefined') {
+    globalThis.crypto = nodeCrypto.webcrypto || nodeCrypto;
+}
+if (typeof global.crypto === 'undefined') {
+    global.crypto = globalThis.crypto;
+}
+// Some libraries expect randomUUID on the global crypto object
+if (globalThis.crypto && !globalThis.crypto.randomUUID) {
+    globalThis.crypto.randomUUID = nodeCrypto.randomUUID;
+}
+
 const { TableClient, AzureNamedKeyCredential } = require("@azure/data-tables");
 const { validateUser } = require("../shared/auth");
 
 module.exports = async function (context, req) {
-    context.log('SaveResume function processing a request.');
+    context.log(`[SaveResume] Function starting. Node version: ${process.version}`);
+    context.log(`[SaveResume] Crypto global check: ${typeof crypto !== 'undefined'}`);
 
     // 1. Validate Auth
     const user = await validateUser(context, req);
