@@ -128,15 +128,26 @@ const Home = () => {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => {
-                setIsSignUp(false);
-                setShowLoginPanel(true);
-              }}
-              className="px-5 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all"
-            >
-              Sign In
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsSignUp(false);
+                  setShowLoginPanel(true);
+                }}
+                className="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-all shadow-sm"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setIsSignUp(true);
+                  setShowLoginPanel(true);
+                }}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
 
@@ -150,35 +161,6 @@ const Home = () => {
             Empowering Indian Youth with employability opportunities — <span className="font-semibold text-slate-800">completely free.</span>
           </p>
 
-          <div className="flex flex-wrap gap-4 mb-8">
-            {!isAuthenticated && (
-              <button
-                onClick={() => {
-                  setIsSignUp(true);
-                  setShowLoginPanel(true);
-                }}
-                className="px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 transition-all flex items-center gap-2"
-              >
-                First Time User? Sign Up Here
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {/* Hackathon Badge */}
-          <div className="inline-flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">Pilot Project</p>
-              <p className="text-sm text-slate-500">Barclays Make a Difference Hackathon</p>
-            </div>
-          </div>
         </header>
 
         {/* Feature Cards */}
