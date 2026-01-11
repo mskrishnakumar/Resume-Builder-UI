@@ -37,20 +37,23 @@ async function validateUser(context, req) {
     const idToken = authHeader.split('Bearer ')[1];
 
     // Diagnostic logging - remove after debugging
+    let debugInfo = {};
     try {
         const parts = idToken.split('.');
-        context.log('Token parts count:', parts.length);
+        debugInfo.tokenParts = parts.length;
         if (parts.length === 3) {
             const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
             const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            context.log('Token header:', JSON.stringify(header));
-            context.log('Token aud (project):', payload.aud);
+            debugInfo.header = header;
+            debugInfo.aud = payload.aud;
             const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
                 ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
                 : null;
-            context.log('Service account project:', serviceAccount?.project_id);
+            debugInfo.serviceAccountProject = serviceAccount?.project_id;
+            context.log('DEBUG INFO:', JSON.stringify(debugInfo));
         }
     } catch (debugErr) {
+        debugInfo.parseError = debugErr.message;
         context.log('Debug token parsing failed:', debugErr.message);
     }
 
@@ -71,7 +74,8 @@ async function validateUser(context, req) {
         return decodedToken;
     } catch (error) {
         context.log('Error verifying ID token:', error);
-        return null;
+        // Return debug info with the error for troubleshooting
+        return { _authError: true, debugInfo, errorMessage: error.message };
     }
 }
 

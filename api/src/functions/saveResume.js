@@ -24,8 +24,14 @@ app.http('saveResume', {
 
         // 1. Validate Auth
         const user = await validateUser(context, request);
-        if (!user) {
-            return { status: 401, body: "Unauthorized" };
+        if (!user || user._authError) {
+            return {
+                status: 401,
+                jsonBody: {
+                    error: "Unauthorized",
+                    debug: user?._authError ? user : null
+                }
+            };
         }
 
         // 2. Parse Body
