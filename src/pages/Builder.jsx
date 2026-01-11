@@ -166,7 +166,7 @@ export default function Builder() {
       setIsCloudSaving(true);
       setSaveError(null);
       try {
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true); // Force refresh
         const response = await fetch('/api/SaveResume', {
           method: 'POST',
           headers: {

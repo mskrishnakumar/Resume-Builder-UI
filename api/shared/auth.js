@@ -35,27 +35,6 @@ async function validateUser(context, req) {
         return null;
     }
 
-    // Diagnostic logging - remove after debugging
-    let debugInfo = {};
-    try {
-        const parts = idToken.split('.');
-        debugInfo.tokenParts = parts.length;
-        if (parts.length === 3) {
-            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            debugInfo.header = header;
-            debugInfo.aud = payload.aud;
-            const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-                ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-                : null;
-            debugInfo.serviceAccountProject = serviceAccount?.project_id;
-            context.log('DEBUG INFO:', JSON.stringify(debugInfo));
-        }
-    } catch (debugErr) {
-        debugInfo.parseError = debugErr.message;
-        context.log('Debug token parsing failed:', debugErr.message);
-    }
-
     try {
         if (!admin.apps.length) {
             context.log("⚠️ AUTH BYPASS: Firebase Admin not initialized (Missing Service Account). Using insecure decoding for DEV mode.");
@@ -63,7 +42,6 @@ async function validateUser(context, req) {
             const parts = idToken.split('.');
             if (parts.length === 3) {
                 const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                // Firebase ID tokens use 'sub' or 'user_id' as the UID
                 payload.uid = payload.uid || payload.sub || payload.user_id;
                 return payload;
             }
@@ -73,8 +51,7 @@ async function validateUser(context, req) {
         return decodedToken;
     } catch (error) {
         context.log('Error verifying ID token:', error);
-        // Return debug info with the error for troubleshooting
-        return { _authError: true, debugInfo, errorMessage: error.message };
+        return null;
     }
 }
 
