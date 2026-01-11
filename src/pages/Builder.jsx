@@ -180,13 +180,12 @@ export default function Builder() {
           setLastSaved(new Date());
           setSaveError(null);
         } else {
+          const errorText = await response.text();
+          console.error(`Cloud save failed (${response.status}):`, errorText);
           try {
-            const errorData = await response.json();
-            console.error(`Cloud save failed (${response.status}):`, errorData);
+            const errorData = JSON.parse(errorText);
             setSaveError(errorData.message || `Error ${response.status}`);
           } catch (e) {
-            const errorText = await response.text();
-            console.error(`Cloud save failed (${response.status}):`, errorText);
             setSaveError(`Cloud Save Failed (${response.status})`);
           }
         }

@@ -36,6 +36,24 @@ async function validateUser(context, req) {
 
     const idToken = authHeader.split('Bearer ')[1];
 
+    // Diagnostic logging - remove after debugging
+    try {
+        const parts = idToken.split('.');
+        context.log('Token parts count:', parts.length);
+        if (parts.length === 3) {
+            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+            context.log('Token header:', JSON.stringify(header));
+            context.log('Token aud (project):', payload.aud);
+            const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+                ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+                : null;
+            context.log('Service account project:', serviceAccount?.project_id);
+        }
+    } catch (debugErr) {
+        context.log('Debug token parsing failed:', debugErr.message);
+    }
+
     try {
         if (!admin.apps.length) {
             context.log("⚠️ AUTH BYPASS: Firebase Admin not initialized (Missing Service Account). Using insecure decoding for DEV mode.");
