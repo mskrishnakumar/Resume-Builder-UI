@@ -46,7 +46,7 @@ app.http('saveResume', {
             try {
                 await client.createTable();
             } catch (err) {
-                if (err.statusCode !== 409) context.log.error("Table check/create failed:", err);
+                if (err.statusCode !== 409) context.log("Table check/create failed:", err);
             }
 
             // 3. Handle photo chunking
@@ -92,7 +92,7 @@ app.http('saveResume', {
             };
 
         } catch (error) {
-            context.log.error("Error saving resume:", error);
+            context.log("Error saving resume:", error);
             return {
                 status: 500,
                 jsonBody: {

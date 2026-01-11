@@ -44,7 +44,7 @@ app.http('getResume', {
                             resumeData.photo = photoResult.photoData;
                         }
                     } catch (photoErr) {
-                        context.log.warn("Photo indicated but not found:", photoErr.message);
+                        context.log("Photo indicated but not found:", photoErr.message);
                     }
                 }
 
@@ -64,7 +64,7 @@ app.http('getResume', {
             }
 
         } catch (error) {
-            context.log.error("Error fetching resume:", error);
+            context.log("Error fetching resume:", error);
             return {
                 status: 500,
                 body: "Internal Server Error"

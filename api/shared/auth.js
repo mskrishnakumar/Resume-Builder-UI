@@ -28,9 +28,9 @@ if (!admin.apps.length) {
  * @returns {Object|null} - Decoded token object or null if invalid
  */
 async function validateUser(context, req) {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.get ? req.headers.get('authorization') : req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        context.log.warn('No valid Authorization header found');
+        context.log('No valid Authorization header found');
         return null;
     }
 
@@ -38,7 +38,7 @@ async function validateUser(context, req) {
 
     try {
         if (!admin.apps.length) {
-            context.log.warn("⚠️ AUTH BYPASS: Firebase Admin not initialized (Missing Service Account). Using insecure decoding for DEV mode.");
+            context.log("⚠️ AUTH BYPASS: Firebase Admin not initialized (Missing Service Account). Using insecure decoding for DEV mode.");
             // Insecurely decode token to get UID for testing
             const parts = idToken.split('.');
             if (parts.length === 3) {
@@ -52,7 +52,7 @@ async function validateUser(context, req) {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         return decodedToken;
     } catch (error) {
-        context.log.error('Error verifying ID token:', error);
+        context.log('Error verifying ID token:', error);
         return null;
     }
 }
