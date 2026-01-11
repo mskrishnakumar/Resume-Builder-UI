@@ -134,7 +134,7 @@ export default function Builder() {
         const token = await user.getIdToken();
         const response = await fetch('/api/GetResume', {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'X-Firebase-Token': token
           }
         });
 
@@ -171,7 +171,7 @@ export default function Builder() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'X-Firebase-Token': token
           },
           body: JSON.stringify(formData)
         });

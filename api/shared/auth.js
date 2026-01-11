@@ -28,13 +28,12 @@ if (!admin.apps.length) {
  * @returns {Object|null} - Decoded token object or null if invalid
  */
 async function validateUser(context, req) {
-    const authHeader = req.headers.get ? req.headers.get('authorization') : req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        context.log('No valid Authorization header found');
+    // Use custom header to avoid Azure SWA intercepting Authorization header
+    const idToken = req.headers.get ? req.headers.get('x-firebase-token') : req.headers['x-firebase-token'];
+    if (!idToken) {
+        context.log('No X-Firebase-Token header found');
         return null;
     }
-
-    const idToken = authHeader.split('Bearer ')[1];
 
     // Diagnostic logging - remove after debugging
     let debugInfo = {};
